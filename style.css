@@ -170,25 +170,12 @@ kbd {
   background: #9bbdff;
 }
 
-.pause-controls-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+#pause-controls-list {
   text-align: left;
-  padding: 4px 6px;
 }
 
-.pause-controls-list.hidden {
+#pause-controls-list.hidden {
   display: none;
-}
-
-.pause-controls-list li {
-  font-size: 12px;
-  color: #888;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .start-level-label {
@@ -210,6 +197,8 @@ kbd {
   cursor: pointer;
 }
 
-.overlay.game-over #pause-menu > :not(#restart-btn) {
+.overlay.game-over #resume-btn,
+.overlay.game-over #controls-toggle-btn,
+.overlay.game-over #pause-controls-list {
   display: none;
 }

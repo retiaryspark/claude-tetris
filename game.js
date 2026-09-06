@@ -328,17 +328,18 @@ function getSelectedStartLevel() {
   return Number(startLevelSelect.value) || MIN_START_LEVEL;
 }
 
+function setControlsListOpen(isOpen) {
+  pauseControlsList.classList.toggle('hidden', !isOpen);
+  controlsToggleBtn.textContent = isOpen ? 'Ocultar controles' : 'Ver controles';
+  controlsToggleBtn.setAttribute('aria-expanded', String(isOpen));
+}
+
 function closeControlsList() {
-  pauseControlsList.classList.add('hidden');
-  controlsToggleBtn.textContent = 'Ver controles';
-  controlsToggleBtn.setAttribute('aria-expanded', 'false');
+  setControlsListOpen(false);
 }
 
 function toggleControlsList() {
-  pauseControlsList.classList.toggle('hidden');
-  const isOpen = !pauseControlsList.classList.contains('hidden');
-  controlsToggleBtn.textContent = isOpen ? 'Ocultar controles' : 'Ver controles';
-  controlsToggleBtn.setAttribute('aria-expanded', String(isOpen));
+  setControlsListOpen(pauseControlsList.classList.contains('hidden'));
 }
 
 resumeBtn.addEventListener('click', () => {
@@ -350,8 +351,6 @@ startLevelSelect.addEventListener('change', () => saveStartLevel(getSelectedStar
 populateStartLevelOptions();
 
 document.addEventListener('keydown', e => {
-  const escapeClosesDropdown = e.code === 'Escape' && document.activeElement === startLevelSelect;
-  if (escapeClosesDropdown) return;
   if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
