@@ -158,18 +158,15 @@ function updateHUD() {
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
+  const skin = SKINS[activeSkin];
+  const color = skin.colors[colorIndex];
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  skin.drawBlock(context, x, y, color, size);
   context.globalAlpha = 1;
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = SKINS[activeSkin].gridColor;
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -300,5 +297,131 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', init);
+
+// ---- Skins ----
+const SKIN_STORAGE_KEY = 'tetris.skin';
+const skinSelectEl = document.getElementById('skin-select');
+
+const NEON_GLOW_BLUR = 12;
+const PASTEL_CORNER_RADIUS = 6;
+const PIXEL_TEXTURE_CELL = 6;
+
+function drawRetroBlock(context, x, y, color, size) {
+  context.fillStyle = color;
+  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+  context.fillStyle = 'rgba(255,255,255,0.12)';
+  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+}
+
+function drawNeonBlock(context, x, y, color, size) {
+  context.save();
+  context.shadowColor = color;
+  context.shadowBlur = NEON_GLOW_BLUR;
+  context.fillStyle = color;
+  context.fillRect(x * size + 2, y * size + 2, size - 4, size - 4);
+  context.restore();
+}
+
+function drawPastelBlock(context, x, y, color, size) {
+  const px = x * size + 1;
+  const py = y * size + 1;
+  const blockSize = size - 2;
+  context.fillStyle = color;
+  if (typeof context.roundRect === 'function') {
+    context.beginPath();
+    context.roundRect(px, py, blockSize, blockSize, PASTEL_CORNER_RADIUS);
+    context.fill();
+  } else {
+    context.fillRect(px, py, blockSize, blockSize);
+  }
+}
+
+function drawPixelBlock(context, x, y, color, size) {
+  const px = x * size + 1;
+  const py = y * size + 1;
+  const blockSize = size - 2;
+  context.fillStyle = color;
+  context.fillRect(px, py, blockSize, blockSize);
+  context.fillStyle = 'rgba(0,0,0,0.18)';
+  for (let row = 0; row * PIXEL_TEXTURE_CELL < blockSize; row++) {
+    for (let col = 0; col * PIXEL_TEXTURE_CELL < blockSize; col++) {
+      if ((row + col) % 2 === 0) continue;
+      const cellWidth = Math.min(PIXEL_TEXTURE_CELL, blockSize - col * PIXEL_TEXTURE_CELL);
+      const cellHeight = Math.min(PIXEL_TEXTURE_CELL, blockSize - row * PIXEL_TEXTURE_CELL);
+      context.fillRect(px + col * PIXEL_TEXTURE_CELL, py + row * PIXEL_TEXTURE_CELL, cellWidth, cellHeight);
+    }
+  }
+  context.fillStyle = 'rgba(255,255,255,0.25)';
+  context.fillRect(px, py, blockSize, 2);
+  context.fillRect(px, py, 2, blockSize);
+}
+
+const SKINS = {
+  retro: {
+    label: 'Retro',
+    colors: COLORS,
+    gridColor: '#22222e',
+    boardBackground: '#1a1a25',
+    drawBlock: drawRetroBlock,
+  },
+  neon: {
+    label: 'Neón',
+    colors: [null, '#00e5ff', '#fff176', '#e040fb', '#69f0ae', '#ff5252', '#536dfe', '#ffab40'],
+    gridColor: '#111318',
+    boardBackground: '#000000',
+    drawBlock: drawNeonBlock,
+  },
+  pastel: {
+    label: 'Pastel',
+    colors: [null, '#a7d8de', '#fbe7a1', '#d9b8e0', '#bfe3c0', '#f3b8b8', '#b8c2ea', '#f6cfa0'],
+    gridColor: '#3a3a4a',
+    boardBackground: '#2a2a38',
+    drawBlock: drawPastelBlock,
+  },
+  pixel: {
+    label: 'Pixel art',
+    colors: COLORS,
+    gridColor: '#22222e',
+    boardBackground: '#1a1a25',
+    drawBlock: drawPixelBlock,
+  },
+};
+
+function loadSkinPreference() {
+  try {
+    const stored = localStorage.getItem(SKIN_STORAGE_KEY);
+    if (stored && SKINS[stored]) return stored;
+  } catch (e) {
+    // localStorage unavailable (e.g. file:// under restrictive privacy settings)
+  }
+  return 'retro';
+}
+
+function saveSkinPreference(skinName) {
+  try {
+    localStorage.setItem(SKIN_STORAGE_KEY, skinName);
+  } catch (e) {
+    // ignore write failures
+  }
+}
+
+function applySkinToCanvases() {
+  const background = SKINS[activeSkin].boardBackground;
+  canvas.style.background = background;
+  nextCanvas.style.background = background;
+}
+
+function setSkin(skinName) {
+  if (!SKINS[skinName]) return;
+  activeSkin = skinName;
+  saveSkinPreference(skinName);
+  applySkinToCanvases();
+  drawNext();
+}
+
+let activeSkin = loadSkinPreference();
+skinSelectEl.value = activeSkin;
+skinSelectEl.addEventListener('change', e => setSkin(e.target.value));
+applySkinToCanvases();
 
 init();
