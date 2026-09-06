@@ -8,6 +8,25 @@
 </head>
 <body>
   <div class="wrapper">
+    <div id="start-screen" class="start-screen">
+      <div class="start-box">
+        <h1 class="start-title">TETRIS</h1>
+
+        <div id="start-records"></div>
+
+        <button id="play-btn" class="play-btn">Jugar</button>
+
+        <div class="reset-records">
+          <button id="reset-records-btn" class="reset-records-btn">Borrar récords</button>
+          <div id="reset-records-confirm" class="reset-records-confirm hidden">
+            <p>Se perderán las 5 mejores puntuaciones, el mejor combo y las líneas máximas. ¿Confirmar?</p>
+            <button id="reset-records-confirm-btn">Sí, borrar</button>
+            <button id="reset-records-cancel-btn">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="game-container">
       <canvas id="board" width="300" height="600"></canvas>
 
