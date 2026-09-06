@@ -106,8 +106,8 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
-    dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    level = startLevel + Math.floor(lines / 10);
+    dropInterval = dropIntervalForLevel(level);
     updateHUD();
   }
 }
@@ -223,6 +223,7 @@ function endGame() {
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  overlay.classList.add('game-over');
   overlay.classList.remove('hidden');
 }
 
@@ -230,6 +231,8 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    overlay.classList.add('hidden');
+    closeControlsList();
     lastTime = performance.now();
     loop(lastTime);
   } else {
@@ -260,22 +263,95 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  startLevel = getSelectedStartLevel();
+  level = startLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = dropIntervalForLevel(level);
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  overlay.classList.remove('game-over');
+  closeControlsList();
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
+// ---- Pause menu ----
+const MIN_START_LEVEL = 1;
+const MAX_START_LEVEL = 10;
+const START_LEVEL_STORAGE_KEY = 'tetris.startLevel';
+
+const resumeBtn = document.getElementById('resume-btn');
+const controlsToggleBtn = document.getElementById('controls-toggle-btn');
+const pauseControlsList = document.getElementById('pause-controls-list');
+const startLevelSelect = document.getElementById('start-level');
+
+let startLevel = MIN_START_LEVEL;
+
+function dropIntervalForLevel(lvl) {
+  return Math.max(100, 1000 - (lvl - 1) * 90);
+}
+
+function loadStartLevel() {
+  try {
+    const storedLevel = Number(localStorage.getItem(START_LEVEL_STORAGE_KEY));
+    if (storedLevel >= MIN_START_LEVEL && storedLevel <= MAX_START_LEVEL) return storedLevel;
+  } catch (e) {
+    // localStorage unavailable (e.g. private browsing) — fall back to default
+  }
+  return MIN_START_LEVEL;
+}
+
+function saveStartLevel(selectedLevel) {
+  try {
+    localStorage.setItem(START_LEVEL_STORAGE_KEY, selectedLevel);
+  } catch (e) {
+    // localStorage unavailable — start level stays session-only
+  }
+}
+
+function populateStartLevelOptions() {
+  for (let lvl = MIN_START_LEVEL; lvl <= MAX_START_LEVEL; lvl++) {
+    const option = document.createElement('option');
+    option.value = lvl;
+    option.textContent = lvl;
+    startLevelSelect.appendChild(option);
+  }
+  startLevelSelect.value = loadStartLevel();
+}
+
+function getSelectedStartLevel() {
+  return Number(startLevelSelect.value) || MIN_START_LEVEL;
+}
+
+function setControlsListOpen(isOpen) {
+  pauseControlsList.classList.toggle('hidden', !isOpen);
+  controlsToggleBtn.textContent = isOpen ? 'Ocultar controles' : 'Ver controles';
+  controlsToggleBtn.setAttribute('aria-expanded', String(isOpen));
+}
+
+function closeControlsList() {
+  setControlsListOpen(false);
+}
+
+function toggleControlsList() {
+  setControlsListOpen(pauseControlsList.classList.contains('hidden'));
+}
+
+resumeBtn.addEventListener('click', () => {
+  if (paused) togglePause();
+});
+controlsToggleBtn.addEventListener('click', toggleControlsList);
+startLevelSelect.addEventListener('change', () => saveStartLevel(getSelectedStartLevel()));
+
+populateStartLevelOptions();
+
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
